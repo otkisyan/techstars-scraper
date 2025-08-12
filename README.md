@@ -10,8 +10,6 @@ The scraper collects detailed job information and stores it in a PostgreSQL data
 This application allows you to fetch job postings from the Techstars Jobs platform by specifying a **job function**.  
 It scrapes the list of jobs, visits each posting, and extracts key details such as position name, company information, location, tags, posting date, and job description (HTML included).
 
----
-
 ## Features
 
 - Scrape job listings by **job function**
@@ -31,8 +29,6 @@ It scrapes the list of jobs, visits each posting, and extracts key details such 
 - REST API for triggering scraping and retrieving stored jobs
 - Configurable User-Agent, base URL, and timeout.
 
----
-
 ## Endpoints
 
 Scrape jobs by *job function* using the `filter` query param on `jobs.techstars.com/jobs` page. Set it up on the website, copy it and pass to the scrape API.
@@ -40,7 +36,7 @@ Scrape jobs by *job function* using the `filter` query param on `jobs.techstars.
 ### 1. Trigger a Scrape
 
 Example scraping "Software Engineering jobs"
-```
+```bash
 curl -X POST "http://localhost:8080/api/scrape?function=eyJqb2JfZnVuY3Rpb25zIjpbIlNvZnR3YXJlIEVuZ2luZWVyaW5nIl19
 ```
 
@@ -52,7 +48,7 @@ Response:
 ```
 ### 2. Get All Stored Jobs
 
-```http 
+```bash 
 curl http://localhost:8080/api/jobs
 ```
 Response: 

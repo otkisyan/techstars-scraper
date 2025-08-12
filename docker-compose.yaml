@@ -1,0 +1,38 @@
+version: '3.8'
+services:
+  postgresql:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  techstars-scraper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platforms:
+        - "linux/amd64"
+    volumes:
+      - /tmp
+    environment:
+      DB_HOST: postgresql
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      SCRAPE_BASE_URL: ${SCRAPE_BASE_URL}
+      SCRAPE_USER_AGENT: ${SCRAPE_USER_AGENT}
+      SCRAPE_TIMEOUT_MS: ${SCRAPE_TIMEOUT_MS}
+      GOOGLE_SHEETS_UPLOAD_ENABLED: ${GOOGLE_SHEETS_UPLOAD_ENABLED}
+      GOOGLE_SHEETS_UPLOAD_SPREADSHEET_ID: ${GOOGLE_SHEETS_UPLOAD_SPREADSHEET_ID}
+    ports:
+      - "8080:8080"
+      - "8888:8888"
+    depends_on:
+      - postgresql
+volumes:
+  db-data:

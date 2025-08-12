@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: techstars-scraper
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:techstars}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: update
+server:
+  port: 8080
+scrape:
+  base-url: ${SCRAPE_BASE_URL:https://jobs.techstars.com/jobs}
+  user-agent: ${SCRAPE_USER_AGENT:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 Edg/134.0.0.0}
+  timeout-ms: ${SCRAPE_TIMEOUT_MS:15000}
+  google-sheets:
+    upload:
+      enabled: ${GOOGLE_SHEETS_UPLOAD_ENABLED:false}
+      spreadsheet-id: ${GOOGLE_SHEETS_UPLOAD_SPREADSHEET_ID:}
+      credentials:
+        file-path: ${GOOGLE_SHEETS_CREDENTIALS_FILE_PATH:/credentials.json}
+      tokens:
+        directory-path: ${GOOGLE_SHEETS_TOKENS_DIRECTORY_PATH:tokens}

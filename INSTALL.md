@@ -17,7 +17,7 @@
 > cd techstars-scraper
 ```
 
-1. Compile and package the code
+2. Compile and package the code
 
 ```bash
 > mvn clean package

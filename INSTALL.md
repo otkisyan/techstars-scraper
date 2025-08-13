@@ -17,22 +17,16 @@
 > cd techstars-scraper
 ```
 
-2. Run PostgreSQL
-
-```bash
-> docker-compose up -d postgresql
-```
-
-3. Compile and package the code
+1. Compile and package the code
 
 ```bash
 > mvn clean package
 ```
 
-4. Run the Application
+3. Run the Application
 
 ```bash
-> docker-compose up -d techstars-scraper
+> docker-compose up -d 
 ```
 
 ### Endpoints:
@@ -51,6 +45,7 @@ Steps to enable ([Google Sheets API Documentation](https://developers.google.com
 - Download the credentials file.
 - Place the credentials file inside `src/main/resources/credentials.json`
 - Set environment variables in `.env` or edit properties in `application.yaml`:
+
 ```bash
 GOOGLE_SHEETS_UPLOAD_ENABLED=true
 GOOGLE_SHEETS_UPLOAD_SPREADSHEET_ID=<your_spreadsheet_id>

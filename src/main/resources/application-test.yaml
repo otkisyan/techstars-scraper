@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: techstars-scraper
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+server:
+  port: 8080
+scrape:
+  base-url: https://jobs.techstars.com/jobs
+  user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 Edg/134.0.0.0}
+  timeout-ms: 15000
+  google-sheets:
+    upload:
+      enabled: false
+      credentials:
+        file-path: credentials.json
+      tokens:
+        directory-path: tokens

@@ -86,9 +86,20 @@ public class GoogleSheetsService {
                 .setApplicationName(applicationName)
                 .build();
 
+        String range = "Sheet1!A1:Z1";
+        ValueRange existingHeader = service.spreadsheets().values()
+                .get(spreadsheetId, range)
+                .execute();
+
         List<List<Object>> values = new ArrayList<>();
-        values.add(List.of("ID", "Job URL", "Position", "Organization URL", "Logo URL",
-                "Organization Title", "Labor Function", "Location Raw", "City", "State", "Country", "Posted Date", "Tags"));
+
+        List<Object> headers = List.of("ID", "Job URL", "Position", "Organization URL", "Logo URL",
+                "Organization Title", "Labor Function", "Location Raw", "City", "State", "Country", "Posted Date", "Tags");
+
+        if (existingHeader.getValues() == null || existingHeader.getValues().isEmpty()
+                || !existingHeader.getValues().get(0).equals(headers)) {
+            values.add(headers);
+        }
 
         for (Job job : jobs) {
             values.add(List.of(
@@ -108,10 +119,10 @@ public class GoogleSheetsService {
             ));
         }
 
-        String range = "Sheet1!A1";
+        String rangeAppend = "Sheet1!A1";
         ValueRange body = new ValueRange().setValues(values);
         service.spreadsheets().values()
-                .append(spreadsheetId, range, body)
+                .append(spreadsheetId, rangeAppend, body)
                 .setValueInputOption("RAW")
                 .execute();
         log.info("Uploaded {} jobs to Google Sheets", jobs.size());

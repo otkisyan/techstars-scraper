@@ -26,7 +26,7 @@ public class ScrapeController {
             List<Job> result = scraperService.scrapeByFunction(jobFunction);
             return ResponseEntity.ok(Map.of("saved", result.size()));
         } catch (Exception e) {
-            log.error("Error during scraping or saving to Sheets", e);
+            log.error("Error during scraping", e);
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
     }

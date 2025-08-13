@@ -22,7 +22,7 @@ public class Job {
     @Column(name="position_name")
     private String positionName;
 
-    @Column(name="organization_url")
+    @Column(name="organization_url", length = 1000)
     private String organizationUrl;
 
     @Column(name="logo_url")

@@ -18,10 +18,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -52,15 +50,19 @@ public class ScraperService {
     }
 
     @Transactional
-    public List<Job> scrapeByFunction(String jobFunction) throws IOException, GeneralSecurityException {
+    public List<Job> scrapeByFunction(String jobFunction) {
         String url = buildListUrl(jobFunction);
         // I will only fetch some of the job listings, not all
-        Document doc = fetchDocument(url, 1, 5);
+        Document doc = fetchDocument(url, 1, 2);
         Map<String, List<String>> jobTagsMap = extractJobTagsMap(doc);
         List<Job> savedJobs = fetchAndSaveJobs(jobTagsMap);
 
         if (!savedJobs.isEmpty() && googleSheetsUploadEnabled && googleSheetsService != null) {
-            googleSheetsService.appendJobsToSheet(savedJobs);
+            try {
+                googleSheetsService.appendJobsToSheet(savedJobs);
+            } catch (Exception e) {
+                throw new RuntimeException("Google Sheets upload failed", e);
+            }
         }
 
         return savedJobs;
@@ -79,6 +81,7 @@ public class ScraperService {
     private Document fetchDocument(String url, int loadMoreClicks, int maxScrolls) {
         WebDriver driver = createWebDriver();
         try {
+            log.info("Fetching URL: {}, wait...", url);
             driver.get(url);
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
 
@@ -115,6 +118,7 @@ public class ScraperService {
         ChromeOptions options = new ChromeOptions();
 
         options.addArguments("--headless=new");
+        options.addArguments("--window-size=1920,1080");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--user-agent=" + userAgent);
@@ -134,12 +138,17 @@ public class ScraperService {
 
     private boolean clickLoadMore(WebDriver driver, WebDriverWait wait, By jobSelector, By loadMoreSelector) {
         int beforeCount = driver.findElements(jobSelector).size();
-        wait.until(ExpectedConditions.elementToBeClickable(loadMoreSelector));
-        WebElement loadMoreBtn = driver.findElement(loadMoreSelector);
-        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", loadMoreBtn);
-        loadMoreBtn.click();
+
+        List<WebElement> loadMoreButtons = driver.findElements(loadMoreSelector);
+        if (loadMoreButtons.isEmpty()) {
+            return false;
+        }
 
         try {
+            WebElement loadMoreBtn = wait.until(ExpectedConditions.elementToBeClickable(loadMoreSelector));
+            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", loadMoreBtn);
+            loadMoreBtn.click();
+
             return wait.until(driverInstance -> {
                 int afterCount = driverInstance.findElements(jobSelector).size();
                 return afterCount > beforeCount;

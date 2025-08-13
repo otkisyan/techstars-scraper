@@ -94,7 +94,7 @@ public class GoogleSheetsService {
         List<List<Object>> values = new ArrayList<>();
 
         List<Object> headers = List.of("ID", "Job URL", "Position", "Organization URL", "Logo URL",
-                "Organization Title", "Labor Function", "Location Raw", "City", "State", "Country", "Posted Date", "Tags");
+                "Organization Title", "Labor Function", "Location Raw", "City", "State", "Country", "Posted Date", "Tags", "Description");
 
         if (existingHeader.getValues() == null || existingHeader.getValues().isEmpty()
                 || !existingHeader.getValues().get(0).equals(headers)) {
@@ -115,7 +115,8 @@ public class GoogleSheetsService {
                     job.getLocationState() != null ? job.getLocationState() : "",
                     job.getLocationCountry() != null ? job.getLocationCountry() : "",
                     job.getPostedDateUnix() != null ? job.getPostedDateUnix().toString() : "",
-                    job.getTags() != null ? job.getTags() : ""
+                    job.getTags() != null ? job.getTags() : "",
+                    job.getDescriptionHtml() != null ? job.getDescriptionHtml() : ""
             ));
         }
 

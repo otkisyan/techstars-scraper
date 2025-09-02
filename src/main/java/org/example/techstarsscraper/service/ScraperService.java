@@ -22,6 +22,9 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,6 +37,7 @@ public class ScraperService {
     private final String baseScrapeUrl;
     private final String userAgent;
     private final boolean googleSheetsUploadEnabled;
+    private final ExecutorService executor;
 
     public ScraperService(JobRepository jobRepository,
                           JobDetailFetcher jobDetailFetcher,
@@ -47,13 +51,14 @@ public class ScraperService {
         this.baseScrapeUrl = baseScrapeUrl;
         this.userAgent = userAgent;
         this.googleSheetsUploadEnabled = googleSheetsUploadEnabled;
+        this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     }
 
     @Transactional
     public List<Job> scrapeByFunction(String jobFunction) {
         String url = buildListUrl(jobFunction);
         // I will only fetch some of the job listings, not all
-        Document doc = fetchDocument(url, 1, 2);
+        Document doc = fetchDocument(url, 1, 4);
         Map<String, List<String>> jobTagsMap = extractJobTagsMap(doc);
         List<Job> savedJobs = fetchAndSaveJobs(jobTagsMap);
 
@@ -225,34 +230,42 @@ public class ScraperService {
 
     private List<Job> fetchAndSaveJobs(Map<String, List<String>> jobTagsMap) {
         List<Job> saved = new ArrayList<>();
-        if (jobTagsMap == null || jobTagsMap.isEmpty()) return saved;
+        if (jobTagsMap == null || jobTagsMap.isEmpty()) return Collections.emptyList();
 
-        for (Map.Entry<String, List<String>> entry : jobTagsMap.entrySet()) {
-            String jobUrl = entry.getKey();
-            List<String> tags = entry.getValue();
+        List<CompletableFuture<Job>> futures = jobTagsMap.entrySet().stream()
+                .map(entry -> CompletableFuture.supplyAsync(() -> {
+                    String jobUrl = entry.getKey();
+                    List<String> tags = entry.getValue();
+                    try {
+                        Job job = jobDetailFetcher.fetch(jobUrl);
+                        if (job == null) {
+                            log.debug("JobDetailFetcher returned null for URL: {}", jobUrl);
+                            return null;
+                        }
 
-            try {
-                Job job = jobDetailFetcher.fetch(jobUrl);
-                if (job == null) {
-                    log.debug("JobDetailFetcher returned null for URL: {}", jobUrl);
-                    continue;
-                }
+                        boolean alreadyPresent = !jobRepository.findByJobPageUrl(job.getJobPageUrl()).isEmpty();
+                        if (!alreadyPresent) {
+                            job.setTags(String.join(", ", tags));
+                            Job savedJob = jobRepository.save(job);
+                            log.info("Saved job: {} (source url {})", savedJob.getId(), jobUrl);
+                            return savedJob;
+                        } else {
+                            log.debug("Job already exists in repository: {}", job.getJobPageUrl());
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to fetch/save job at {}: {}", jobUrl, e.getMessage());
+                        log.debug("Stacktrace:", e);
+                    }
+                    return null;
+                }, executor))
+                .toList();
 
-                boolean alreadyPresent = !jobRepository.findByJobPageUrl(job.getJobPageUrl()).isEmpty();
-                if (!alreadyPresent) {
-                    job.setTags(String.join(", ", tags));
-                    Job savedJob = jobRepository.save(job);
-                    saved.add(savedJob);
-                    log.info("Saved job: {} (source url {})", savedJob.getId(), jobUrl);
-                } else {
-                    log.debug("Job already exists in repository: {}", job.getJobPageUrl());
-                }
+        List<Job> savedJobs = futures.stream()
+                .map(CompletableFuture::join)
+                .filter(Objects::nonNull)
+                .toList();
 
-            } catch (Exception e) {
-                log.warn("Failed to fetch/save job at {}: {}", jobUrl, e.getMessage());
-                log.debug("Stacktrace:", e);
-            }
-        }
-        return saved;
+        return savedJobs;
+
     }
 }
